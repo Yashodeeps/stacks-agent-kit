@@ -1,0 +1,39 @@
+{
+  "name": "stacks-agent-kit",
+  "version": "0.0.1",
+  "license": "MIT",
+  "description": "Stacks Agent Kit",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Yashodeeps/stacks-agent-kit.git"
+  },
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "unpkg": "dist/index.global.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts --format esm,cjs,iife --global-name MySDK --clean",
+    "dev": "tsup src/index.ts --dts --format esm,cjs,iife --global-name MySDK --watch --clean"
+  },
+  "dependencies": {
+    "@langchain/langgraph": "^0.4.9",
+    "@stacks/auth": "^7.2.0",
+    "@stacks/network": "^7.2.0",
+    "@stacks/storage": "^7.2.0",
+    "@stacks/transactions": "^7.2.0",
+    "cross-fetch": "^4.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "@types/node": "^24.3.1"
+  }
+}
