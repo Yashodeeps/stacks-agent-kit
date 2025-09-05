@@ -1,7 +1,7 @@
 import { StateGraph, END } from '@langchain/langgraph';
-import { StacksAgent } from './base.js';
-import { StacksQueryTool } from '../tools/query';
-import { StacksTransferTool } from '../tools/transfer';
+import { StacksAgent } from './agent.js';
+import { StacksQueryTool } from '../tools/query.js';
+import { StacksTransferTool } from '../tools/transfer.js';
 import { AgentConfig, QueryParams, TransferParams } from '../types/index';
 
 export class StacksWalletAgent extends StacksAgent {
@@ -90,7 +90,20 @@ export class StacksWalletAgent extends StacksAgent {
           required: ['fromPrivateKey', 'toAddress', 'amount'],
         },
         execute: async (params: TransferParams) => {
-          return await this.transferTool.transferSTX(params);
+          // Use initialized private key if no private key provided in params
+          const transferParams = {
+            ...params,
+            fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+          };
+          
+          if (!transferParams.fromPrivateKey) {
+            return {
+              success: false,
+              error: 'No private key provided. Either initialize a private key in the agent config or provide one in the transfer parameters.'
+            };
+          }
+          
+          return await this.transferTool.transferSTX(transferParams);
         },
       } as any,
       {
@@ -119,7 +132,20 @@ export class StacksWalletAgent extends StacksAgent {
           required: ['fromPrivateKey', 'toAddress', 'amount'],
         },
         execute: async (params: Omit<TransferParams, 'fee'>) => {
-          return await this.transferTool.estimateTransferFee(params);
+          // Use initialized private key if no private key provided in params
+          const estimateParams = {
+            ...params,
+            fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+          };
+          
+          if (!estimateParams.fromPrivateKey) {
+            return {
+              success: false,
+              error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+            };
+          }
+          
+          return await this.transferTool.estimateTransferFee(estimateParams);
         },
       } as any,
       {
@@ -144,7 +170,20 @@ export class StacksWalletAgent extends StacksAgent {
           required: ['fromPrivateKey', 'toAddress', 'amount'],
         },
         execute: async (params: Omit<TransferParams, 'fee' | 'memo'>) => {
-          return await this.transferTool.validateTransfer(params);
+          // Use initialized private key if no private key provided in params
+          const validateParams = {
+            ...params,
+            fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+          };
+          
+          if (!validateParams.fromPrivateKey) {
+            return {
+              success: false,
+              error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+            };
+          }
+          
+          return await this.transferTool.validateTransfer(validateParams);
         },
       } as any,
     ];
@@ -160,15 +199,54 @@ export class StacksWalletAgent extends StacksAgent {
   }
 
   async transferSTX(params: TransferParams) {
-    return await this.transferTool.transferSTX(params);
+    // Use initialized private key if no private key provided in params
+    const transferParams = {
+      ...params,
+      fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+    };
+    
+    if (!transferParams.fromPrivateKey) {
+      return {
+        success: false,
+        error: 'No private key provided. Either initialize a private key in the agent config or provide one in the transfer parameters.'
+      };
+    }
+    
+    return await this.transferTool.transferSTX(transferParams);
   }
 
   async estimateTransferFee(params: Omit<TransferParams, 'fee'>) {
-    return await this.transferTool.estimateTransferFee(params);
+    // Use initialized private key if no private key provided in params
+    const estimateParams = {
+      ...params,
+      fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+    };
+    
+    if (!estimateParams.fromPrivateKey) {
+      return {
+        success: false,
+        error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+      };
+    }
+    
+    return await this.transferTool.estimateTransferFee(estimateParams);
   }
 
   async validateTransfer(params: Omit<TransferParams, 'fee' | 'memo'>) {
-    return await this.transferTool.validateTransfer(params);
+    // Use initialized private key if no private key provided in params
+    const validateParams = {
+      ...params,
+      fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+    };
+    
+    if (!validateParams.fromPrivateKey) {
+      return {
+        success: false,
+        error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+      };
+    }
+    
+    return await this.transferTool.validateTransfer(validateParams);
   }
 
   async executeWorkflow(workflow: string, params: any) {
@@ -195,5 +273,56 @@ export class StacksWalletAgent extends StacksAgent {
     }
     
     return { success: false, error: 'Unknown workflow' };
+  }
+
+  async executePrompt(prompt: string): Promise<any> {
+    try {
+      // Match prompt to relevant tools and extract parameters
+      const { tools: relevantTools, parameters, error } = await this.matchPromptToTools(prompt);
+      
+      if (error) {
+        return {
+          success: false,
+          error
+        };
+      }
+      
+      if (relevantTools.length === 0) {
+        return {
+          success: false,
+          error: 'No relevant tools found for the given prompt.'
+        };
+      }
+
+      // If only one tool is relevant, execute it with extracted parameters
+      if (relevantTools.length === 1) {
+        const tool = relevantTools[0];
+        
+        // Add initialized private key to parameters if available and needed
+        if (this.initializedKey && (tool.name === 'transfer_stx' || tool.name === 'estimate_transfer_fee' || tool.name === 'validate_transfer')) {
+          parameters.fromPrivateKey = parameters.fromPrivateKey || this.initializedKey.privateKey;
+        }
+        
+        return await tool.execute(parameters);
+      }
+
+      // If multiple tools are relevant, return them for user to choose
+      return {
+        success: true,
+        data: {
+          message: 'Multiple tools are relevant to your prompt. Please specify which one to use:',
+          relevantTools: relevantTools.map(tool => ({
+            name: tool.name,
+            description: tool.description
+          })),
+          extractedParameters: parameters
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Failed to execute prompt: ${error}`
+      };
+    }
   }
 }
