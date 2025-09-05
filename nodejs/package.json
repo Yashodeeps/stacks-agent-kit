@@ -2,7 +2,7 @@
   "name": "stacks-agent-kit",
   "version": "0.0.1",
   "license": "MIT",
-  "description": "Stacks Agent Kit",
+  "description": "Agent Kit for Stacks",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Yashodeeps/stacks-agent-kit.git"
