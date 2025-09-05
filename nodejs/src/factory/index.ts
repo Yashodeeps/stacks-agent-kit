@@ -1,8 +1,8 @@
-import { StacksWalletAgent } from '../agents/wallet';
+import { StacksWalletAgent } from "../agents/wallet";
 
 // Factory function for easy agent creation
 export function createStacksWalletAgent(config: {
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
   coreApiUrl?: string;
   broadcastApiUrl?: string;
   defaultFee?: string;
