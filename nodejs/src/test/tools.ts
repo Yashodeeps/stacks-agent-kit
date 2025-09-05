@@ -117,10 +117,6 @@ async function toolsExample() {
   }
 }
 
-// // Run the example
-// agentKitToolsExample().catch(console.error);
-
-
 // Run the example
 if (import.meta.url === `file://${process.argv[1]}`) {
   toolsExample().catch(console.error);

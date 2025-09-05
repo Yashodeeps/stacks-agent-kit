@@ -78,18 +78,6 @@ export abstract class StacksAgent {
     }
   }
 
-  protected formatSTX(microSTX: string): string {
-    const stx = BigInt(microSTX) / BigInt(1000000);
-    const remainder = BigInt(microSTX) % BigInt(1000000);
-    return `${stx}.${remainder.toString().padStart(6, '0')}`;
-  }
-
-  protected parseSTX(stx: string): string {
-    const [whole, decimal = '0'] = stx.split('.');
-    const paddedDecimal = decimal.padEnd(6, '0').slice(0, 6);
-    return `${whole}${paddedDecimal}`;
-  }
-
   private initializePrivateKey(privateKey: string): void {
     try {
       this.initializedKey = StacksUtils.initializePrivateKey({
@@ -196,6 +184,7 @@ export abstract class StacksAgent {
       return { tools: this.getTools(), parameters: {} };
     }
 
+    // If no AI client was used (neither OpenAI nor Anthropic), return default tools
     return { tools: this.getTools(), parameters: {} };
   }
 

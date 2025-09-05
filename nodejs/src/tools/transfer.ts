@@ -3,7 +3,6 @@ import {
   broadcastTransaction, 
   AnchorMode,
   PostConditionMode,
-  FungibleConditionCode,
 } from '@stacks/transactions';
 import { StacksNetwork } from '@stacks/network';
 import { TransferParams, ToolResult } from '../types/index';
