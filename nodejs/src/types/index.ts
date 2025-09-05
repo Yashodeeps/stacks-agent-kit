@@ -38,7 +38,11 @@ export interface StacksNetworkConfig {
 }
 
 export interface AgentConfig {
+  privateKey?: string;
   network: StacksNetworkConfig;
+  model?: string;
+  openAiApiKey?: string;
+  anthropicApiKey?: string;
   defaultFee?: string;
 }
 
@@ -47,4 +51,16 @@ export interface ToolResult<T = any> {
   data?: T;
   error?: string;
   transactionId?: string;
+}
+
+export interface PrivateKeyInfo {
+  privateKey: string;
+  publicKey: string;
+  address: string;
+  network: 'mainnet' | 'testnet';
+}
+
+export interface KeyInitializationParams {
+  privateKey?: string; // Optional: if not provided, will generate a new one
+  network: 'mainnet' | 'testnet';
 }

@@ -3,7 +3,7 @@ export { StacksAgent, StacksWalletAgent } from './agents/index';
 export { StacksQueryTool, StacksTransferTool } from './tools/index';
 
 // Factory function export
-export { createStacksWalletAgent } from './factory/index';
+export { createStacksWalletAgent } from './core/index';
 
 // Utility functions export
 export { StacksUtils } from './utils/index';

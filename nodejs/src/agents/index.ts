@@ -1,3 +1,3 @@
 // Agent exports
-export { StacksAgent } from './base.js';
-export { StacksWalletAgent } from './wallet';
+export { StacksAgent } from './agent.js';
+export { StacksWalletAgent } from './wallet-agent.js';

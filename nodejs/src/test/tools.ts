@@ -1,19 +1,35 @@
+import { config } from 'dotenv';
 import { createStacksWalletAgent, StacksUtils } from '../index';
 
+// Load environment variables
+config();
+
 // Example usage of the Stacks Agent Kit
-async function example() {
+async function toolsExample() {
   console.log('🚀 Stacks Agent Kit Example\n');
 
-  // Create an agent for testnet
-  const agent = createStacksWalletAgent({
-    network: 'testnet',
+  // Get configuration from environment variables
+  const network = process.env.STACKS_NETWORK || 'testnet';
+  const testAddress = process.env.STACKS_WALLET_A_ADDRESS;
+  const testFromPrivateKey = process.env.STACKS_WALLET_A_PRIVATE_KEY;
+
+  // Validate required environment variables
+  if (!testAddress || !testFromPrivateKey) {
+    console.error('❌ Missing required environment variables:');
+    console.error('   STACKS_WALLET_A_ADDRESS and STACKS_WALLET_A_PRIVATE_KEY must be set in .env file');
+    console.error('   Copy .env.example to .env and update with your values');
+    process.exit(1);
+  }
+
+  // Create an agent for the specified network
+  const agent = await createStacksWalletAgent({
+    network: network as 'testnet' | 'mainnet',
   });
 
-  console.log('✅ Agent created successfully\n');
-
-  // Example wallet address (testnet)
-  const testAddress = 'STC5QXRZ8ZPBKNNY9HSKV0E5D2W5Q2W5QVSYC6DM';
-  const testFromPrivateKey = 'STC5QXRZ8ZPBKNNY9HSKV0E5D2W5Q2W5QVSYC6DM';
+  console.log('✅ Agent created successfully');
+  console.log(`📡 Network: ${network}`);
+  console.log(`📍 Wallet Address: ${testAddress}\n`);
+  
   try {
     // 1. Query wallet information
     console.log('📊 Querying last 3 transactions of wallet...');
@@ -48,7 +64,7 @@ async function example() {
     // 3. Validate a transfer (without actually sending)
     console.log('🔍 Validating transfer...');
     const validateResult = await agent.validateTransfer({
-      fromPrivateKey: 'example-private-key', // This will fail as expected
+      fromPrivateKey: testFromPrivateKey,
       toAddress: testAddress,
       amount: '1.0'
     });
@@ -64,7 +80,7 @@ async function example() {
     // 4. Estimate transfer fee
     console.log('💸 Estimating transfer fee...');
     const feeResult = await agent.estimateTransferFee({
-      fromPrivateKey: testFromPrivateKey, // This will fail as expected
+      fromPrivateKey: testFromPrivateKey,
       toAddress: testAddress,
       amount: '1.0'
     });
@@ -101,5 +117,13 @@ async function example() {
   }
 }
 
+// // Run the example
+// agentKitToolsExample().catch(console.error);
+
+
 // Run the example
-example().catch(console.error);
+if (import.meta.url === `file://${process.argv[1]}`) {
+  toolsExample().catch(console.error);
+}
+
+export { toolsExample };
