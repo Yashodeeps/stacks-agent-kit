@@ -4,7 +4,7 @@ import { AgentConfig, ToolResult, PrivateKeyInfo } from '../types/index';
 import { StacksUtils } from '../utils/index';
 
 export abstract class StacksAgent {
-  protected network: StacksNetwork;
+  public network: StacksNetwork;
   protected config: AgentConfig;
   protected initializedKey?: PrivateKeyInfo;
   protected aiClient?: any;

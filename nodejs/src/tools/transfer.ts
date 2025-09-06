@@ -39,12 +39,12 @@ export class StacksTransferTool {
       // Create the transaction
       const txOptions = {
         recipient: toAddress,
-        amount: microSTXAmount,
+        amount: BigInt(microSTXAmount),
         senderKey: fromPrivateKey,
         network: this.network,
         memo: memo,
-        nonce: nonce,
-        fee: fee ? this.parseSTX(fee) : undefined,
+        nonce: BigInt(nonce),
+        fee: fee ? BigInt(this.parseSTX(fee)) : undefined,
         anchorMode: AnchorMode.Any,
         postConditionMode: PostConditionMode.Deny,
       };
@@ -54,7 +54,7 @@ export class StacksTransferTool {
       // Broadcast the transaction
       const broadcastResponse = await broadcastTransaction({
         transaction,
-        network: this.network
+        network: this.network,
       });
       
       if ('error' in broadcastResponse) {
@@ -90,11 +90,11 @@ export class StacksTransferTool {
 
       const txOptions = {
         recipient: toAddress,
-        amount: microSTXAmount,
+        amount: BigInt(microSTXAmount),
         senderKey: fromPrivateKey,
         network: this.network,
         memo: memo,
-        nonce: nonce,
+        nonce: BigInt(nonce),
         anchorMode: AnchorMode.Any,
         postConditionMode: PostConditionMode.Deny,
       };
@@ -167,10 +167,23 @@ export class StacksTransferTool {
     }
   }
 
-  private parseSTX(stx: string): string {
+  private parseSTX(stx: string | bigint | number): bigint {
+    // If it's already a BigInt, return it
+    if (typeof stx === 'bigint') {
+      return stx;
+    }
+    // If it's a number, convert it to BigInt
+    if (typeof stx === 'number') {
+      return BigInt(Math.floor(stx * 1_000_000));
+    }
+    // If it's a string without a decimal point, assume it's already in microSTX
+    if (!stx.includes('.')) {
+      return BigInt(stx);
+    }
+    // Otherwise, convert from STX to microSTX
     const [whole, decimal = '0'] = stx.split('.');
     const paddedDecimal = decimal.padEnd(6, '0').slice(0, 6);
-    return `${whole}${paddedDecimal}`;
+    return BigInt(`${whole}${paddedDecimal}`);
   }
 
   private formatSTX(microSTX: string): string {

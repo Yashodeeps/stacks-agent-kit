@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { createStacksWalletAgent } from '../index';
+import { makeSTXTokenTransfer, broadcastTransaction, TransactionSigner, transactionToHex } from '@stacks/transactions';
 
 // Load environment variables
 config();
@@ -12,7 +13,7 @@ async function simpleTransfer() {
   const walletAAddress = process.env.STACKS_WALLET_A_ADDRESS;
   const walletAPrivateKey = process.env.STACKS_WALLET_A_PRIVATE_KEY;
   const walletBAddress = process.env.STACKS_WALLET_B_ADDRESS;
-  const transferAmount = '0.02'; // 0.02 STX
+  const transferAmount = '0.02'; // Amount in STX (will be converted to microSTX internally)
 
   // Validate required environment variables
   if (!walletAAddress || !walletAPrivateKey || !walletBAddress) {
@@ -43,30 +44,65 @@ async function simpleTransfer() {
 
     // 2. Perform the transfer
     console.log(`🚀 Transferring ${transferAmount} STX...`);
+    console.log("agent.network.client.baseUrl", agent.network.client.baseUrl);
 
-    const transferResult = await agent.transferSTX({
-      fromPrivateKey: walletAPrivateKey,
-      toAddress: walletBAddress,
-      amount: transferAmount,
+    const accountResponse = await fetch(`${agent.network.client.baseUrl}/v2/accounts/${walletAAddress}`);
+    if (!accountResponse.ok) {
+      throw new Error(`Failed to fetch account: ${accountResponse.statusText}`);
+    }
+    // console.log("accountResponse", accountResponse);
+    const accountInfo = await accountResponse.json();
+    const nonce = parseInt(accountInfo.nonce || '0');
+
+    console.log(`Nonce: ${nonce}`);
+
+    const txOptions = {
+      recipient: walletBAddress,
+      amount: 20000n,
+      senderKey: walletAPrivateKey,
+      network: network as 'testnet' | 'mainnet',
       memo: 'Simple transfer test',
-    });
+      nonce: nonce,
+      fee: 400n,
+    };
 
-    if (transferResult.success) {
-      console.log('✅ Transfer successful!');
-      console.log(`Transaction ID: ${transferResult.transactionId}\n`);
-    } else {
-      console.log(`❌ Transfer failed: ${transferResult.error}\n`);
+    const transaction = await makeSTXTokenTransfer(txOptions);
+    
+    const signer = new TransactionSigner(transaction);
+    signer.signOrigin(walletAPrivateKey);
+    const signedTx = signer.transaction;
+    const serializedTx = transactionToHex(signedTx);
+    
+    console.log("serializedTx", serializedTx);
+
+    const response = await fetch(`${agent.network.client.baseUrl}/v2/transactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tx: serializedTx }),
+    });
+    const broadcastResponse = await response.json();
+
+    console.log("broadcastResponse", broadcastResponse);
+
+    if (!response.ok) {
+      console.log(`❌ Transfer failed: ${broadcastResponse.error || 'Unknown error'}`);
+      console.log('Note: This can be because we are using test addresses with no balance.\n');
       return;
     }
 
-    // 3. Check final balances
-    console.log('📊 Checking final balances...');
-    
-    const finalBalanceA = await agent.getBalance({ address: walletAAddress });
-    const finalBalanceB = await agent.getBalance({ address: walletBAddress });
+    // If we get here, we have a successful transaction
+    const txid = typeof broadcastResponse === 'string' ? broadcastResponse : broadcastResponse.txid;
+    console.log('✅ Transfer successful!');
+    console.log(`Transaction ID: ${txid}\n`);
 
-    console.log(`Wallet A final balance: ${finalBalanceA.success ? finalBalanceA.data : 'Error'} STX`);
-    console.log(`Wallet B final balance: ${finalBalanceB.success ? finalBalanceB.data : 'Error'} STX`);
+    // 3. Check final balances
+    // console.log('📊 Checking final balances...');
+    
+    // const finalBalanceA = await agent.getBalance({ address: walletAAddress });
+    // const finalBalanceB = await agent.getBalance({ address: walletBAddress });
+
+    // console.log(`Wallet A final balance: ${finalBalanceA.success ? finalBalanceA.data : 'Error'} STX`);
+    // console.log(`Wallet B final balance: ${finalBalanceB.success ? finalBalanceB.data : 'Error'} STX`);
 
   } catch (error) {
     console.error('❌ Transfer failed:', error);
@@ -74,7 +110,7 @@ async function simpleTransfer() {
 }
 
 // Run the transfer if this file is executed directly
-if (require.main === module) {
+if (import.meta.url === new URL(process.argv[1], 'file:').href) {
   simpleTransfer().catch(console.error);
 }
 

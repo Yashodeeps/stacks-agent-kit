@@ -2,16 +2,19 @@ import { StateGraph, END } from '@langchain/langgraph';
 import { StacksAgent } from './agent.js';
 import { StacksQueryTool } from '../tools/query.js';
 import { StacksTransferTool } from '../tools/transfer.js';
-import { AgentConfig, QueryParams, TransferParams } from '../types/index';
+import { StacksSwapTool } from '../tools/swap.js';
+import { AgentConfig, QueryParams, TransferParams, SwapParams } from '../types/index';
 
 export class StacksWalletAgent extends StacksAgent {
   private queryTool: StacksQueryTool;
   private transferTool: StacksTransferTool;
+  private swapTool: StacksSwapTool;
 
   constructor(config: AgentConfig) {
     super(config);
     this.queryTool = new StacksQueryTool(this.network);
     this.transferTool = new StacksTransferTool(this.network);
+    this.swapTool = new StacksSwapTool(this.network);
   }
 
   getTools() {
@@ -247,6 +250,38 @@ export class StacksWalletAgent extends StacksAgent {
     }
     
     return await this.transferTool.validateTransfer(validateParams);
+  }
+
+  async getSwapQuote(params: SwapParams) {
+    const swapParams = {
+      ...params,
+      fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+    };
+
+    if (!swapParams.fromPrivateKey) {
+      return {
+        success: false,
+        error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+      };
+    }
+
+    return await this.swapTool.getSwapQuote(swapParams);
+  }
+
+  async swapSTXForSBTC(params: SwapParams) {
+    const swapParams = {
+      ...params,
+      fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
+    };
+
+    if (!swapParams.fromPrivateKey) {
+      return {
+        success: false,
+        error: 'No private key provided. Either initialize a private key in the agent config or provide one in the parameters.'
+      };
+    }
+
+    return await this.swapTool.swapSTXForSBTC(swapParams);
   }
 
   async executeWorkflow(workflow: string, params: any) {

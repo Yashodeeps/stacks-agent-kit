@@ -20,7 +20,7 @@ export interface TransactionInfo {
 export interface TransferParams {
   fromPrivateKey: string;
   toAddress: string;
-  amount: string; // in microSTX (1 STX = 1,000,000 microSTX)
+  amount: string | bigint | number; // in microSTX (1 STX = 1,000,000 microSTX)
   memo?: string;
   fee?: string; // optional fee override
 }
@@ -63,4 +63,19 @@ export interface PrivateKeyInfo {
 export interface KeyInitializationParams {
   privateKey?: string; // Optional: if not provided, will generate a new one
   network: 'mainnet' | 'testnet';
+}
+
+export interface SwapParams {
+  fromPrivateKey: string;
+  amount: string;
+  slippageTolerance?: number; // in percentage, default 0.5%
+  fee?: string; // optional fee override
+}
+
+export interface SwapQuote {
+  expectedOutput: string;
+  minimumOutput: string;
+  fee: string;
+  priceImpact: string; // in percentage
+  route: string[];
 }

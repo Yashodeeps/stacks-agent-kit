@@ -24,7 +24,8 @@
     "dev": "tsup src/index.ts --dts --format esm,cjs,iife --global-name MySDK --watch --clean",
     "tools-test": "npx tsx src/test/tools.ts",
     "transfer-test": "npx tsx src/test/transfer.ts",
-    "prompt-test": "npx tsx src/test/prompt.ts"
+    "prompt-test": "npx tsx src/test/prompt.ts",
+    "swap-test": "npx tsx src/test/swap.ts"
   },
   "dependencies": {
     "@langchain/langgraph": "^0.4.9",
