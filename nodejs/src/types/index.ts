@@ -79,3 +79,91 @@ export interface SwapQuote {
   priceImpact: string; // in percentage
   route: string[];
 }
+
+// Contract deployment types
+export interface ContractDeployParams {
+  fromPrivateKey: string;
+  contractName: string;
+  codeBody: string;
+  fee?: string;
+  nonce?: number;
+}
+
+// Contract call types
+export interface ContractCallParams {
+  fromPrivateKey: string;
+  contractAddress: string;
+  contractName: string;
+  functionName: string;
+  functionArgs: any[]; // ClarityValue[]
+  fee?: string;
+  nonce?: number;
+  postConditions?: any[]; // PostConditionSpec[]
+  validateWithAbi?: boolean;
+}
+
+// Read-only call types
+export interface ReadOnlyCallParams {
+  contractAddress: string;
+  contractName: string;
+  functionName: string;
+  functionArgs: any[]; // ClarityValue[]
+  senderAddress?: string;
+}
+
+// Key management types
+export interface KeyGenerationParams {
+  network: 'mainnet' | 'testnet';
+  entropy?: string;
+}
+
+export interface KeyImportParams {
+  privateKeyHex: string;
+  network: 'mainnet' | 'testnet';
+}
+
+// Multi-signature types
+export interface MultiSigSTXTransferParams {
+  recipients: string;
+  amount: string;
+  memo?: string;
+  fee?: string;
+  numSignatures: number;
+  publicKeys: string[];
+}
+
+export interface MultiSigContractCallParams {
+  contractAddress: string;
+  contractName: string;
+  functionName: string;
+  functionArgs: any[]; // ClarityValue[]
+  fee?: string;
+  numSignatures: number;
+  publicKeys: string[];
+  postConditions?: any[]; // PostCondition[]
+}
+
+// Sponsored transaction types
+export interface SponsoredSTXTransferParams {
+  originPrivateKey: string;
+  recipient: string;
+  amount: string;
+  memo?: string;
+}
+
+export interface SponsoredContractCallParams {
+  originPrivateKey: string;
+  contractAddress: string;
+  contractName: string;
+  functionName: string;
+  functionArgs: any[]; // ClarityValue[]
+  postConditions?: any[]; // PostCondition[]
+  validateWithAbi?: boolean;
+}
+
+export interface SponsorTransactionParams {
+  transactionHex: string;
+  sponsorPrivateKey: string;
+  fee: string;
+  sponsorNonce?: number;
+}
