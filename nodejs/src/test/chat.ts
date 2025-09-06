@@ -186,13 +186,180 @@ async function unifiedAgentExample() {
       );
     }
 
-    // PART 3: Mixed Usage Patterns
+    // PART 3: Personality Features (NEW)
+    if (agent.isConversationalEnabled()) {
+      console.log("=".repeat(60));
+      console.log("PART 3: PERSONALITY FEATURES");
+      console.log("=".repeat(60) + "\n");
+
+      // Example 9: Default personality (no custom personality set)
+      console.log("9️⃣ Default personality behavior...");
+      console.log(
+        "Current personality:",
+        agent.getCurrentPersonality() || "Default (none set)"
+      );
+      const defaultResponse = await agent.simpleChat(
+        "Tell me about STX transfers and fees"
+      );
+      console.log(
+        "Default response:",
+        defaultResponse.substring(0, 200) + "..."
+      );
+      console.log();
+
+      // Example 10: Friendly and enthusiastic personality
+      console.log("🔟 Setting friendly and enthusiastic personality...");
+      const friendlyPersonality = `You are an extremely friendly and enthusiastic blockchain expert who loves helping people! 
+      Use lots of emojis, exclamation points, and analogies to make complex blockchain concepts fun and easy to understand. 
+      Always be encouraging and celebrate user successes, no matter how small. 
+      When explaining technical concepts, use everyday analogies like comparing blockchain to a digital ledger book or transactions to sending mail.`;
+
+      agent.updatePersonality(friendlyPersonality);
+      console.log("✅ Friendly personality set!");
+
+      const friendlyResponse1 = await agent.simpleChat(
+        "Can you check my STX balance?"
+      );
+      console.log(
+        "Friendly response 1:",
+        friendlyResponse1.substring(0, 300) + "..."
+      );
+
+      const friendlyResponse2 = await agent.simpleChat(
+        "How do transaction fees work?"
+      );
+      console.log(
+        "Friendly response 2:",
+        friendlyResponse2.substring(0, 300) + "..."
+      );
+      console.log();
+
+      // Example 11: Professional and concise personality
+      console.log("1️⃣1️⃣ Setting professional and concise personality...");
+      const professionalPersonality = `You are a professional, no-nonsense blockchain consultant who provides precise, technical advice. 
+      Keep responses concise and focus on facts and numbers. 
+      Avoid emojis, exclamation points, or casual language. 
+      Provide clear, actionable information without unnecessary explanations. 
+      When users ask questions, give them exactly what they need to know in the most efficient way possible.`;
+
+      agent.updatePersonality(professionalPersonality);
+      console.log("✅ Professional personality set!");
+
+      const professionalResponse1 = await agent.simpleChat(
+        "Can you check my STX balance?"
+      );
+      console.log(
+        "Professional response 1:",
+        professionalResponse1.substring(0, 300) + "..."
+      );
+
+      const professionalResponse2 = await agent.simpleChat(
+        "How do transaction fees work?"
+      );
+      console.log(
+        "Professional response 2:",
+        professionalResponse2.substring(0, 300) + "..."
+      );
+      console.log();
+
+      // Example 12: Educational mentor personality
+      console.log("1️⃣2️⃣ Setting educational mentor personality...");
+      const mentorPersonality = `You are a patient and knowledgeable blockchain educator who takes pride in helping users learn. 
+      Always explain the 'why' behind your recommendations and break down complex concepts into digestible steps. 
+      Use teaching analogies and check for understanding. 
+      Encourage questions and make users feel comfortable about not knowing everything. 
+      Focus on building their confidence and knowledge progressively.`;
+
+      agent.updatePersonality(mentorPersonality);
+      console.log("✅ Educational mentor personality set!");
+
+      const mentorResponse1 = await agent.simpleChat(
+        "I'm confused about how blockchain transactions work"
+      );
+      console.log(
+        "Mentor response 1:",
+        mentorResponse1.substring(0, 300) + "..."
+      );
+
+      const mentorResponse2 = await agent.simpleChat(
+        "Should I be worried about transaction fees?"
+      );
+      console.log(
+        "Mentor response 2:",
+        mentorResponse2.substring(0, 300) + "..."
+      );
+      console.log();
+
+      // Example 13: Personality consistency across conversation
+      console.log(
+        "1️⃣3️⃣ Testing personality consistency across conversation..."
+      );
+      agent.updatePersonality(friendlyPersonality); // Back to friendly
+
+      let personalityState: ConversationalState | undefined;
+
+      const personalityTurn1 = await agent.chat(
+        "Hi there! I'm new to Stacks blockchain."
+      );
+      console.log(
+        "Turn 1 (Friendly):",
+        personalityTurn1.response.substring(0, 200) + "..."
+      );
+      personalityState = personalityTurn1.state;
+
+      const personalityTurn2 = await agent.continueChat(
+        "Can you help me understand what STX tokens are?",
+        personalityState
+      );
+      console.log(
+        "Turn 2 (Still Friendly):",
+        personalityTurn2.response.substring(0, 200) + "..."
+      );
+      personalityState = personalityTurn2.state;
+
+      // Now change personality mid-conversation
+      agent.updatePersonality(professionalPersonality);
+      console.log("🔄 Changed to professional personality mid-conversation");
+
+      const personalityTurn3 = await agent.continueChat(
+        "What about transaction fees?",
+        personalityState
+      );
+      console.log(
+        "Turn 3 (Now Professional):",
+        personalityTurn3.response.substring(0, 200) + "..."
+      );
+      console.log();
+
+      // Example 14: Clearing personality
+      console.log("1️⃣4️⃣ Clearing personality (reverting to default)...");
+      agent.clearPersonality();
+      console.log(
+        "Current personality:",
+        agent.getCurrentPersonality() || "Default (none set)"
+      );
+
+      const clearedResponse = await agent.simpleChat(
+        "Tell me about STX transfers"
+      );
+      console.log(
+        "Cleared personality response:",
+        clearedResponse.substring(0, 200) + "..."
+      );
+      console.log();
+    } else {
+      console.log(
+        "⚠️  Conversational features are not enabled. Skipping personality examples.\n"
+      );
+    }
+
+    // PART 4: Mixed Usage Patterns
     console.log("=".repeat(60));
-    console.log("PART 3: MIXED USAGE PATTERNS");
+    console.log("PART 4: MIXED USAGE PATTERNS");
     console.log("=".repeat(60) + "\n");
 
-    // Example 9: Compare traditional vs conversational for same query
-    console.log("9️⃣ Comparing traditional vs conversational approaches...");
+    // Example 15: Compare traditional vs conversational for same query
+    console.log("1️⃣5️⃣ Comparing traditional vs conversational approaches...");
 
     const query = `What's the balance and recent transactions for ${testAddress}?`;
 
@@ -216,13 +383,17 @@ async function unifiedAgentExample() {
     }
     console.log();
 
-    // Example 10: Configuration and customization
-    console.log("🔟 Agent configuration and customization...");
+    // Example 16: Configuration and customization
+    console.log("1️⃣6️⃣ Agent configuration and customization...");
     console.log("Current configuration:");
     console.log("- Network:", agentConfig.network);
     console.log("- Model:", agentConfig.model);
     console.log("- Conversational enabled:", agent.isConversationalEnabled());
     console.log("- Has private key:", !!agent.getInitializedKey());
+    console.log(
+      "- Current personality:",
+      agent.getCurrentPersonality() || "Default"
+    );
 
     // Update system prompt example
     if (agent.isConversationalEnabled()) {
@@ -252,6 +423,11 @@ Always prioritize security and provide clear explanations.`;
         agent.isConversationalEnabled() ? "Working" : "Disabled"
       }`
     );
+    console.log(
+      `✅ Personality features: ${
+        agent.isConversationalEnabled() ? "Working" : "Disabled"
+      }`
+    );
     console.log("✅ Mixed usage patterns: Working");
     console.log("✅ Error handling: Working");
     console.log("✅ Configuration: Working");
@@ -262,6 +438,56 @@ Always prioritize security and provide clear explanations.`;
       error instanceof Error ? error.stack : "No stack trace available"
     );
   }
+}
+
+// Example of creating an agent with personality from the start
+async function personalityFromStartExample() {
+  console.log("\n" + "🎭 Personality-From-Start Agent Example\n");
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.log(
+      "⚠️ OpenAI API key required for personality features. Skipping..."
+    );
+    return;
+  }
+
+  const testAddress = process.env.STACKS_WALLET_A_ADDRESS;
+
+  // Create agent with personality configured from initialization
+  const personalityConfig = {
+    privateKey: process.env.STACKS_WALLET_A_PRIVATE_KEY,
+    network: process.env.STACKS_NETWORK as "testnet" | "mainnet",
+    openAiApiKey: process.env.OPENAI_API_KEY,
+    enableConversational: true,
+    personalityPrompt: `You are Stacksy, a cheerful and knowledgeable Stacks blockchain mascot! 🚀 
+    You love helping people navigate the Stacks ecosystem and always end your messages with a fun blockchain emoji. 
+    You explain things in a simple, friendly way and get excited about the potential of decentralized applications. 
+    When users accomplish something, celebrate with them! 🎉`,
+  };
+
+  const personalityAgent = await createStacksWalletAgent(personalityConfig);
+  await personalityAgent.init();
+
+  console.log("✅ Personality-configured agent created!");
+  console.log(
+    "Initial personality:",
+    personalityAgent.getCurrentPersonality()?.substring(0, 100) + "..."
+  );
+
+  // Test the personality from the start
+  const greetingResponse = await personalityAgent.simpleChat(
+    "Hello! I'm new to Stacks."
+  );
+  console.log("Greeting response:", greetingResponse);
+
+  if (testAddress) {
+    const balanceResponse = await personalityAgent.simpleChat(
+      `Can you check my balance? My address is ${testAddress}`
+    );
+    console.log("Balance response:", balanceResponse);
+  }
+
+  console.log("✅ Personality-from-start example completed!");
 }
 
 // Example of creating an agent without conversational features
@@ -297,12 +523,92 @@ async function traditionalOnlyExample() {
       error instanceof Error ? error.message : "Unknown error"
     );
   }
+
+  // Personality methods should also be unavailable
+  try {
+    agent.updatePersonality("Test personality");
+    console.log("❌ This should not work either!");
+  } catch (error) {
+    console.log(
+      "✅ Personality methods properly disabled:",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+}
+
+// Showcase different personality examples
+async function personalityShowcaseExample() {
+  console.log("\n" + "🎨 Personality Showcase Example\n");
+
+  if (!process.env.OPENAI_API_KEY) {
+    console.log(
+      "⚠️ OpenAI API key required for personality showcase. Skipping..."
+    );
+    return;
+  }
+
+  const testAddress = process.env.STACKS_WALLET_A_ADDRESS;
+
+  const baseConfig = {
+    privateKey: process.env.STACKS_WALLET_A_PRIVATE_KEY,
+    network: process.env.STACKS_NETWORK as "testnet" | "mainnet",
+    openAiApiKey: process.env.OPENAI_API_KEY,
+    enableConversational: true,
+  };
+
+  const personalities = [
+    {
+      name: "The Crypto Pirate 🏴‍☠️",
+      prompt: `You are a friendly crypto pirate who loves blockchain treasure! 
+      Use pirate language occasionally (ahoy, matey, etc.) and refer to STX tokens as 'digital doubloons'. 
+      You're adventurous and exciting but still knowledgeable about blockchain security. 
+      End messages with ⚓ when appropriate.`,
+    },
+    {
+      name: "The Blockchain Scientist 🧪",
+      prompt: `You are a blockchain scientist who approaches everything with curiosity and precision. 
+      You love explaining the technical details and often use scientific analogies. 
+      You're methodical, thorough, and fascinated by the underlying cryptographic principles. 
+      Occasionally reference experiments, molecules, or lab work in your explanations.`,
+    },
+    {
+      name: "The Zen Master 🧘‍♂️",
+      prompt: `You are a wise and calm blockchain zen master who helps users find balance in the crypto world. 
+      Speak in a peaceful, mindful way and often relate blockchain concepts to life philosophy. 
+      Encourage patience, mindfulness, and thoughtful decision-making. 
+      Use nature analogies and remind users to stay centered.`,
+    },
+  ];
+
+  const testQuery = testAddress
+    ? `What's my STX balance? My address is ${testAddress}`
+    : "Can you explain how STX transactions work?";
+
+  for (const personality of personalities) {
+    console.log(`\n--- ${personality.name} ---`);
+
+    const agent = await createStacksWalletAgent({
+      ...baseConfig,
+      personalityPrompt: personality.prompt,
+    });
+    await agent.init();
+
+    const response = await agent.simpleChat(testQuery);
+    console.log(
+      "Response:",
+      response.substring(0, 300) + (response.length > 300 ? "..." : "")
+    );
+  }
+
+  console.log("\n✅ Personality showcase completed!");
 }
 
 // Run the examples
 async function runAllExamples() {
   try {
     await unifiedAgentExample();
+    await personalityFromStartExample();
+    await personalityShowcaseExample();
     await traditionalOnlyExample();
   } catch (error) {
     console.error("Failed to run examples:", error);
@@ -316,4 +622,10 @@ async function runAllExamples() {
 
 runAllExamples().catch(console.error);
 
-export { unifiedAgentExample, traditionalOnlyExample, runAllExamples };
+export {
+  unifiedAgentExample,
+  personalityFromStartExample,
+  personalityShowcaseExample,
+  traditionalOnlyExample,
+  runAllExamples,
+};

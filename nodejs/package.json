@@ -29,15 +29,16 @@
     "chat-test": "npx tsx src/test/chat.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.30.0",
     "@langchain/langgraph": "^0.4.9",
+    "@langchain/openai": "^0.6.11",
     "@stacks/auth": "^7.2.0",
     "@stacks/network": "^7.2.0",
     "@stacks/storage": "^7.2.0",
     "@stacks/transactions": "^7.2.0",
     "cross-fetch": "^4.1.0",
     "dotenv": "^17.2.2",
-    "openai": "^4.0.0",
-    "@anthropic-ai/sdk": "^0.30.0"
+    "openai": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.3.1",

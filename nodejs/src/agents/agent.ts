@@ -30,6 +30,7 @@ export interface ConversationalConfig extends AgentConfig {
   enableConversational?: boolean;
   conversationalModel?: string;
   systemPrompt?: string;
+  personalityPrompt?: string;
 }
 
 export abstract class StacksAgent {
@@ -39,6 +40,7 @@ export abstract class StacksAgent {
   protected aiClient?: any;
   protected llm?: ChatOpenAI;
   protected systemPrompt: string;
+  protected personalityPrompt?: string;
   protected conversationalEnabled?: boolean;
 
   constructor(config: ConversationalConfig) {
@@ -46,7 +48,9 @@ export abstract class StacksAgent {
     this.network = this.createNetwork(config.network);
     this.conversationalEnabled = config.enableConversational ?? true;
 
-    // Set default system prompt
+    this.personalityPrompt = config.personalityPrompt;
+
+    // Set default system prompt (now incorporates personality if provided)
     this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
 
     // Initialize private key if provided
@@ -101,7 +105,7 @@ export abstract class StacksAgent {
   }
 
   private getDefaultSystemPrompt(): string {
-    return `You are a helpful Stacks blockchain assistant. You can help users with:
+    const basePrompt = `You are a helpful Stacks blockchain assistant. You can help users with:
 1. Querying wallet information (balance, transactions, nonce)
 2. Transferring STX tokens
 3. Estimating transfer fees
@@ -116,6 +120,41 @@ Available tools: ${this.getTools()
       .join(", ")}
 
 Respond conversationally and ask for clarification when needed.`;
+
+    // Incorporate personality prompt if provided
+    if (this.personalityPrompt) {
+      return `${basePrompt}
+
+PERSONALITY AND BEHAVIOR:
+${this.personalityPrompt}
+
+Remember to maintain this personality while helping users with Stacks blockchain operations.`;
+    }
+
+    return basePrompt;
+  }
+
+  // New method to get the complete system prompt including personality
+  private getCompleteSystemPrompt(): string {
+    return this.systemPrompt;
+  }
+
+  // New method to update personality prompt at runtime
+  updatePersonality(personalityPrompt: string): void {
+    this.personalityPrompt = personalityPrompt;
+    // Regenerate system prompt with new personality
+    this.systemPrompt = this.getDefaultSystemPrompt();
+  }
+
+  // New method to clear personality (revert to default)
+  clearPersonality(): void {
+    this.personalityPrompt = undefined;
+    this.systemPrompt = this.getDefaultSystemPrompt();
+  }
+
+  // New method to get current personality
+  getCurrentPersonality(): string | undefined {
+    return this.personalityPrompt;
   }
 
   protected createGraph() {
@@ -189,7 +228,11 @@ Respond conversationally and ask for clarification when needed.`;
       );
     }
 
-    const messages = [new SystemMessage(this.systemPrompt), ...state.messages];
+    // Use complete system prompt including personality
+    const messages = [
+      new SystemMessage(this.getCompleteSystemPrompt()),
+      ...state.messages,
+    ];
 
     const analysisPrompt = `Analyze the user's message and determine:
 1. What tool (if any) should be used?
@@ -332,7 +375,7 @@ If information is missing, ask for it politely.`;
     }
 
     const messages = [
-      new SystemMessage(this.systemPrompt),
+      new SystemMessage(this.getCompleteSystemPrompt()),
       ...state.messages,
       new HumanMessage(responsePrompt),
     ];
@@ -511,6 +554,10 @@ If information is missing, ask for it politely.`;
 
       const systemPrompt = `You are a helpful assistant that matches user prompts to appropriate Stacks blockchain tools and extracts parameters.
 
+      ${
+        this.personalityPrompt ? `PERSONALITY: ${this.personalityPrompt}\n` : ""
+      }
+
       Available tools: ${JSON.stringify(toolDescriptions, null, 2)}
 
       For the given user prompt, you need to:
@@ -587,7 +634,6 @@ If information is missing, ask for it politely.`;
     return this.conversationalEnabled && !!this.llm;
   }
 
-  // Update system prompt
   updateSystemPrompt(prompt: string): void {
     this.systemPrompt = prompt;
   }

@@ -1,8 +1,8 @@
-import { StacksWalletAgent } from '../agents/wallet-agent';
+import { StacksWalletAgent } from "../agents/wallet-agent";
 
 // Factory function for easy agent creation
 export async function createStacksWalletAgent(config: {
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
   coreApiUrl?: string;
   broadcastApiUrl?: string;
   defaultFee?: string;
@@ -10,6 +10,8 @@ export async function createStacksWalletAgent(config: {
   model?: string;
   openAiApiKey?: string;
   anthropicApiKey?: string;
+
+  personalityPrompt?: string;
 }) {
   const agent = new StacksWalletAgent({
     network: {
@@ -23,7 +25,7 @@ export async function createStacksWalletAgent(config: {
     openAiApiKey: config.openAiApiKey,
     anthropicApiKey: config.anthropicApiKey,
   });
-  
+
   await agent.init();
   return agent;
 }
