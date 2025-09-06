@@ -25,25 +25,16 @@ export abstract class StacksAgent {
   }
 
   private createNetwork(networkConfig: AgentConfig['network']): StacksNetwork {
-    // If custom URLs are provided, create a custom network
+    // Start with the default network
+    const network = networkConfig.network === 'mainnet' ? STACKS_MAINNET : STACKS_TESTNET;
+    
+    // If custom URLs are provided, override the baseUrl
     if (networkConfig.coreApiUrl || networkConfig.broadcastApiUrl) {
-      // Use coreApiUrl as the primary baseUrl, fallback to broadcastApiUrl if coreApiUrl not provided
       const baseUrl = networkConfig.coreApiUrl || networkConfig.broadcastApiUrl;
-      
-      return createNetwork({
-        network: networkConfig.network,
-        client: {
-          baseUrl: baseUrl!
-        }
-      });
+      network.client.baseUrl = baseUrl!;
     }
     
-    // Use default networks if no custom URLs provided
-    if (networkConfig.network === 'mainnet') {
-      return STACKS_MAINNET;
-    } else {
-      return STACKS_TESTNET;
-    }
+    return network;
   }
 
   protected createGraph() {

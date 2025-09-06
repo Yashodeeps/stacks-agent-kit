@@ -268,7 +268,7 @@ export class StacksWalletAgent extends StacksAgent {
     return await this.swapTool.getSwapQuote(swapParams);
   }
 
-  async swapSTXForSBTC(params: SwapParams) {
+  async swapSTXForXBTC(params: SwapParams) {
     const swapParams = {
       ...params,
       fromPrivateKey: params.fromPrivateKey || this.initializedKey?.privateKey || params.fromPrivateKey
@@ -281,7 +281,7 @@ export class StacksWalletAgent extends StacksAgent {
       };
     }
 
-    return await this.swapTool.swapSTXForSBTC(swapParams);
+    return await this.swapTool.swapSTXForXBTC(swapParams);
   }
 
   async executeWorkflow(workflow: string, params: any) {
