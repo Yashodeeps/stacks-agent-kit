@@ -574,6 +574,7 @@ If information is missing, ask for it politely.`;
       return { tools: this.getTools(), parameters: {} };
     }
 
+    // If no AI client was used (neither OpenAI nor Anthropic), return default tools
     return { tools: this.getTools(), parameters: {} };
   }
 
