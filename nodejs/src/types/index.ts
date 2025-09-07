@@ -12,7 +12,7 @@ export interface TransactionInfo {
   from?: string;
   to?: string;
   fee: string;
-  status: 'pending' | 'success' | 'failed';
+  status: "pending" | "success" | "failed";
   timestamp: number;
   blockHeight?: number;
 }
@@ -32,7 +32,7 @@ export interface QueryParams {
 }
 
 export interface StacksNetworkConfig {
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
   coreApiUrl?: string;
   broadcastApiUrl?: string;
 }
@@ -57,12 +57,12 @@ export interface PrivateKeyInfo {
   privateKey: string;
   publicKey: string;
   address: string;
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
 }
 
 export interface KeyInitializationParams {
   privateKey?: string; // Optional: if not provided, will generate a new one
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
 }
 
 export interface SwapParams {
@@ -113,13 +113,13 @@ export interface ReadOnlyCallParams {
 
 // Key management types
 export interface KeyGenerationParams {
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
   entropy?: string;
 }
 
 export interface KeyImportParams {
   privateKeyHex: string;
-  network: 'mainnet' | 'testnet';
+  network: "mainnet" | "testnet";
 }
 
 // Multi-signature types
