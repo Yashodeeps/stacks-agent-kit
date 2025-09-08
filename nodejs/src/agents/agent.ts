@@ -42,6 +42,7 @@ export abstract class StacksAgent {
   protected systemPrompt: string;
   protected personalityPrompt?: string;
   protected conversationalEnabled?: boolean;
+  protected gameMode: "blockchain" | "amongus" = "blockchain";
 
   constructor(config: ConversationalConfig) {
     this.config = config;
@@ -50,19 +51,20 @@ export abstract class StacksAgent {
 
     this.personalityPrompt = config.personalityPrompt;
 
+    // Check if this is an Among Us personality and set game mode
+    if (
+      config.personalityPrompt &&
+      this.isAmongUsPersonality(config.personalityPrompt)
+    ) {
+      this.gameMode = "amongus";
+    }
+
     // Set default system prompt (now incorporates personality if provided)
     this.systemPrompt = config.systemPrompt || this.getDefaultSystemPrompt();
 
     // Initialize private key if provided
     if (config.privateKey) {
       this.initializePrivateKey(config.privateKey);
-    }
-
-    if (
-      config.personalityPrompt &&
-      this.isAmongUsPersonality(config.personalityPrompt)
-    ) {
-      this.gameMode = "amongus";
     }
   }
 
@@ -88,11 +90,34 @@ export abstract class StacksAgent {
       "eliminate",
       "accuse",
       "vent",
+      "playing among us",
+      "social deduction",
+      "find the impostor",
+      "crew member",
+      "eliminate crewmates",
+      "blend in",
+      "avoid suspicion",
+      "dave", "nancy", "carl", "anna", "jim", "sam", // Character names
+      "methodical", "anxious", "jumpy", "self-assured", "analytical", "humor", "quiet", "observant", // Personality traits
+      "blockchain assistant", "stacks", "not a blockchain", "not helping with blockchain", // Explicit exclusions
+      "game", "playing", "character", "personality", "behavior", "observations", "defend", "accusations"
     ];
     const lowerPersonality = personality.toLowerCase();
-    return amongUsKeywords.some((keyword) =>
+    
+    // Check for explicit Among Us indicators
+    const hasGameIndicators = amongUsKeywords.some((keyword) =>
       lowerPersonality.includes(keyword)
     );
+    
+    // Also check if it explicitly mentions NOT being a blockchain assistant
+    const isExplicitlyGameMode = lowerPersonality.includes("not a blockchain") || 
+                                lowerPersonality.includes("not helping with blockchain") ||
+                                lowerPersonality.includes("playing a social deduction game");
+    
+    console.log(`Personality check - Has game indicators: ${hasGameIndicators}, Is explicitly game mode: ${isExplicitlyGameMode}`);
+    console.log(`Personality preview: ${personality.substring(0, 150)}...`);
+    
+    return hasGameIndicators || isExplicitlyGameMode;
   }
 
   private createNetwork(networkConfig: AgentConfig["network"]): StacksNetwork {
@@ -455,6 +480,8 @@ Game Rules:
   private getAmongUsSystemPrompt(): string {
     const basePrompt = `You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
 
+CRITICAL: You are NOT a blockchain assistant, Stacks assistant, or cryptocurrency helper. You are playing a game.
+
 Your goal depends on your role:
 - If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
 - If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
@@ -467,7 +494,16 @@ Game Rules:
 - Make observations about other players' behavior
 - Use deductive reasoning and social interaction
 
-IMPORTANT: You are NOT a blockchain assistant in this context. You are playing a game.`;
+NEVER mention:
+- Blockchain technology
+- STX tokens
+- Wallet operations
+- Cryptocurrency
+- Stacks network
+- Private keys
+- Transactions
+
+You are ONLY a character in Among Us.`;
 
     if (this.personalityPrompt) {
       return `${basePrompt}
@@ -475,7 +511,7 @@ IMPORTANT: You are NOT a blockchain assistant in this context. You are playing a
 YOUR PERSONALITY AND BEHAVIOR:
 ${this.personalityPrompt}
 
-Embody this personality completely while playing the game. Your responses should reflect this character.`;
+Embody this personality completely while playing the game. Your responses should reflect this character and NEVER mention blockchain or cryptocurrency topics.`;
     }
 
     return basePrompt;
@@ -572,8 +608,36 @@ Game Rules:
       throw new Error("Conversational features not enabled");
     }
 
+    // Check if this should be Among Us mode based on personality or explicit game mode
+    const shouldUseAmongUsMode = this.gameMode === "amongus" || 
+      (this.personalityPrompt && this.isAmongUsPersonality(this.personalityPrompt));
+
+    console.log(`SimpleChat - Game mode: ${this.gameMode}, Should use Among Us: ${shouldUseAmongUsMode}`);
+    console.log(`SimpleChat - Personality: ${this.personalityPrompt?.substring(0, 100)}...`);
+
     // For Among Us mode, use direct LLM interaction without tool analysis
-    if (this.gameMode === "amongus") {
+    if (shouldUseAmongUsMode) {
+      // Ensure we're in Among Us mode
+      if (this.gameMode !== "amongus") {
+        this.setGameMode("amongus");
+      }
+      return this.handleAmongUsChat(message);
+    }
+
+    // FALLBACK: If the message seems to be about Among Us or social deduction, force Among Us mode
+    const messageLower = message.toLowerCase();
+    const isGameRelated = messageLower.includes("among us") || 
+                         messageLower.includes("impostor") || 
+                         messageLower.includes("crew") || 
+                         messageLower.includes("vote") || 
+                         messageLower.includes("suspicious") ||
+                         messageLower.includes("round") ||
+                         messageLower.includes("eliminate") ||
+                         messageLower.includes("accuse");
+
+    if (isGameRelated) {
+      console.log(`Message appears game-related, forcing Among Us mode: ${message.substring(0, 50)}...`);
+      this.setGameMode("amongus");
       return this.handleAmongUsChat(message);
     }
 
@@ -583,7 +647,10 @@ Game Rules:
   }
 
   setGameMode(mode: "blockchain" | "amongus"): void {
+    console.log(`Setting game mode to: ${mode}`);
     this.gameMode = mode;
+    // Update system prompt when mode changes
+    this.systemPrompt = this.getDefaultSystemPrompt();
   }
 
   // Add method to get current mode
@@ -596,6 +663,9 @@ Game Rules:
       throw new Error("Conversational LLM not initialized");
     }
 
+    console.log(`Among Us chat - Current game mode: ${this.gameMode}`);
+    console.log(`Among Us chat - System prompt preview: ${this.getCompleteSystemPrompt().substring(0, 200)}...`);
+
     const messages = [
       new SystemMessage(this.getCompleteSystemPrompt()),
       new HumanMessage(message),
@@ -603,6 +673,7 @@ Game Rules:
 
     try {
       const response = await this.llm.invoke(messages);
+      console.log(`Among Us chat response: ${response.content}`);
       return response.content as string;
     } catch (error) {
       console.error("Among Us chat error:", error);
