@@ -57,6 +57,13 @@ export abstract class StacksAgent {
     if (config.privateKey) {
       this.initializePrivateKey(config.privateKey);
     }
+
+    if (
+      config.personalityPrompt &&
+      this.isAmongUsPersonality(config.personalityPrompt)
+    ) {
+      this.gameMode = "amongus";
+    }
   }
 
   async init(): Promise<void> {
@@ -67,6 +74,25 @@ export abstract class StacksAgent {
     if (this.conversationalEnabled && this.config.openAiApiKey) {
       this.initializeConversationalLLM();
     }
+  }
+
+  private isAmongUsPersonality(personality: string): boolean {
+    const amongUsKeywords = [
+      "among us",
+      "impostor",
+      "detective",
+      "nervous",
+      "suspicious",
+      "crewmate",
+      "vote",
+      "eliminate",
+      "accuse",
+      "vent",
+    ];
+    const lowerPersonality = personality.toLowerCase();
+    return amongUsKeywords.some((keyword) =>
+      lowerPersonality.includes(keyword)
+    );
   }
 
   private createNetwork(networkConfig: AgentConfig["network"]): StacksNetwork {
@@ -105,33 +131,13 @@ export abstract class StacksAgent {
   }
 
   private getDefaultSystemPrompt(): string {
-    const basePrompt = `You are a helpful Stacks blockchain assistant. You can help users with:
-1. Querying wallet information (balance, transactions, nonce)
-2. Transferring STX tokens
-3. Estimating transfer fees
-4. Validating transfers
-
-Always be clear about what information you need and explain the steps you're taking.
-When handling private keys, remind users to keep them secure and never share them.
-For transfers, always validate before executing.
-
-Available tools: ${this.getTools()
-      .map((tool) => `${tool.name}: ${tool.description}`)
-      .join(", ")}
-
-Respond conversationally and ask for clarification when needed.`;
-
-    // Incorporate personality prompt if provided
-    if (this.personalityPrompt) {
-      return `${basePrompt}
-
-PERSONALITY AND BEHAVIOR:
-${this.personalityPrompt}
-
-Remember to maintain this personality while helping users with Stacks blockchain operations.`;
+    // If in Among Us mode, use game-focused prompt
+    if (this.gameMode === "amongus") {
+      return this.getAmongUsSystemPrompt();
     }
 
-    return basePrompt;
+    // Otherwise use blockchain prompt
+    return this.getBlockchainSystemPrompt();
   }
 
   // New method to get the complete system prompt including personality
@@ -223,12 +229,20 @@ Remember to maintain this personality while helping users with Stacks blockchain
     state: ConversationalState
   ): Promise<Partial<ConversationalState>> {
     if (!this.llm) {
-      throw new Error(
-        "Conversational LLM not initialized. Please ensure enableConversational is true and OpenAI API key is provided."
-      );
+      throw new Error("Conversational LLM not initialized");
     }
 
-    // Use complete system prompt including personality
+    // In Among Us mode, skip tool analysis and go straight to response
+    if (this.gameMode === "amongus") {
+      return {
+        context: {
+          ...state.context,
+          analysis: { needsTool: false, intent: "game_response" },
+        },
+      };
+    }
+
+    // ... existing blockchain analysis logic ...
     const messages = [
       new SystemMessage(this.getCompleteSystemPrompt()),
       ...state.messages,
@@ -250,7 +264,23 @@ Respond with a JSON object containing:
   "parameters": object or null,
   "missingInfo": string[] or null,
   "intent": string
-}`;
+}
+  
+NOTE: If user is asking about amongus game, no need to use any tool. Just respond to their message and play the amongus game
+You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
+
+Your goal depends on your role:
+- If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
+- If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
+
+Game Rules:
+- During discussion phases, share observations and suspicions
+- Vote strategically based on behavior and evidence  
+- Stay in character with your personality
+- Respond naturally to accusations and defend yourself when needed
+- Make observations about other players' behavior
+- Use deductive reasoning and social interaction
+`;
 
     const lastMessage = state.messages[state.messages.length - 1];
     if (lastMessage instanceof HumanMessage) {
@@ -358,7 +388,28 @@ Respond with a JSON object containing:
 
     let responsePrompt = `Based on the user's message and any tool results, provide a helpful response.
 Keep it conversational and clear. If there were errors, explain them helpfully.
-If information is missing, ask for it politely.`;
+If information is missing, ask for it politely.
+
+
+If user asks about amongus game: 
+
+You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
+
+Your goal depends on your role:
+- If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
+- If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
+
+Game Rules:
+- During discussion phases, share observations and suspicions
+- Vote strategically based on behavior and evidence  
+- Stay in character with your personality
+- Respond naturally to accusations and defend yourself when needed
+- Make observations about other players' behavior
+- Use deductive reasoning and social interaction
+
+
+
+`;
 
     if (analysis?.missingInfo?.length) {
       responsePrompt += `\n\nMissing information needed: ${analysis.missingInfo.join(
@@ -399,6 +450,81 @@ If information is missing, ask for it politely.`;
         toolResults: undefined,
       };
     }
+  }
+
+  private getAmongUsSystemPrompt(): string {
+    const basePrompt = `You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
+
+Your goal depends on your role:
+- If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
+- If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
+
+Game Rules:
+- During discussion phases, share observations and suspicions
+- Vote strategically based on behavior and evidence  
+- Stay in character with your personality
+- Respond naturally to accusations and defend yourself when needed
+- Make observations about other players' behavior
+- Use deductive reasoning and social interaction
+
+IMPORTANT: You are NOT a blockchain assistant in this context. You are playing a game.`;
+
+    if (this.personalityPrompt) {
+      return `${basePrompt}
+
+YOUR PERSONALITY AND BEHAVIOR:
+${this.personalityPrompt}
+
+Embody this personality completely while playing the game. Your responses should reflect this character.`;
+    }
+
+    return basePrompt;
+  }
+
+  private getBlockchainSystemPrompt(): string {
+    const basePrompt = `You are a helpful Stacks blockchain assistant. You can help users with:
+1. Querying wallet information (balance, transactions, nonce)
+2. Transferring STX tokens
+3. Estimating transfer fees
+4. Validating transfers
+
+Always be clear about what information you need and explain the steps you're taking.
+When handling private keys, remind users to keep them secure and never share them.
+For transfers, always validate before executing.
+
+Available tools: ${this.getTools()
+      .map((tool) => `${tool.name}: ${tool.description}`)
+      .join(", ")}
+
+Respond conversationally and ask for clarification when needed.`;
+
+    if (this.personalityPrompt) {
+      return `${basePrompt}
+
+PERSONALITY AND BEHAVIOR:
+${this.personalityPrompt}
+
+Remember to maintain this personality while helping users with Stacks blockchain operations.
+
+if user is asking to play among us game:
+You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
+
+Your goal depends on your role:
+- If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
+- If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
+
+Game Rules:
+- During discussion phases, share observations and suspicions
+- Vote strategically based on behavior and evidence  
+- Stay in character with your personality
+- Respond naturally to accusations and defend yourself when needed
+- Make observations about other players' behavior
+- Use deductive reasoning and social interaction
+
+`;
+    }
+
+    return basePrompt;
   }
 
   // Main chat method - only available when conversational is enabled
@@ -446,8 +572,42 @@ If information is missing, ask for it politely.`;
       throw new Error("Conversational features not enabled");
     }
 
+    // For Among Us mode, use direct LLM interaction without tool analysis
+    if (this.gameMode === "amongus") {
+      return this.handleAmongUsChat(message);
+    }
+
+    // For blockchain mode, use the full chat pipeline
     const result = await this.chat(message);
     return result.response;
+  }
+
+  setGameMode(mode: "blockchain" | "amongus"): void {
+    this.gameMode = mode;
+  }
+
+  // Add method to get current mode
+  getGameMode(): "blockchain" | "amongus" {
+    return this.gameMode || "blockchain";
+  }
+
+  private async handleAmongUsChat(message: string): Promise<string> {
+    if (!this.llm) {
+      throw new Error("Conversational LLM not initialized");
+    }
+
+    const messages = [
+      new SystemMessage(this.getCompleteSystemPrompt()),
+      new HumanMessage(message),
+    ];
+
+    try {
+      const response = await this.llm.invoke(messages);
+      return response.content as string;
+    } catch (error) {
+      console.error("Among Us chat error:", error);
+      return "I'm having trouble responding right now...";
+    }
   }
 
   // Method to continue a conversation
@@ -496,7 +656,6 @@ If information is missing, ask for it politely.`;
     const paddedDecimal = decimal.padEnd(6, "0").slice(0, 6);
     return `${whole}${paddedDecimal}`;
   }
-
 
   private initializePrivateKey(privateKey: string): void {
     try {
@@ -554,6 +713,8 @@ If information is missing, ask for it politely.`;
 
       const systemPrompt = `You are a helpful assistant that matches user prompts to appropriate Stacks blockchain tools and extracts parameters.
 
+      You also play among us game with your fellow agents given your personality type.
+
       ${
         this.personalityPrompt ? `PERSONALITY: ${this.personalityPrompt}\n` : ""
       }
@@ -577,7 +738,25 @@ If information is missing, ask for it politely.`;
         }
       }
 
-      Only include parameters that are mentioned in the prompt. If a parameter is not mentioned, don't include it in the parameters object.`;
+      Only include parameters that are mentioned in the prompt. If a parameter is not mentioned, don't include it in the parameters object.
+
+      If user asks about amongus game: 
+
+You are playing Among Us, a social deduction game. You are an AI agent with a specific personality.
+
+Your goal depends on your role:
+- If you're a CREWMATE: Find and vote out the impostor(s) while completing tasks
+- If you're an IMPOSTOR: Blend in, avoid suspicion, and eliminate crewmates without being caught
+
+Game Rules:
+- During discussion phases, share observations and suspicions
+- Vote strategically based on behavior and evidence  
+- Stay in character with your personality
+- Respond naturally to accusations and defend yourself when needed
+- Make observations about other players' behavior
+- Use deductive reasoning and social interaction
+      
+      `;
 
       let response;
       if (this.config.openAiApiKey) {
